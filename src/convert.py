@@ -1,12 +1,25 @@
-import supervisely as sly
-import os
-from dataset_tools.convert import unpack_if_archive
-import src.settings as s
-from urllib.parse import unquote, urlparse
-from supervisely.io.fs import get_file_name, get_file_size
-import shutil
+# https://air.ug/microscopy_dataset/
 
+import glob
+import os
+import shutil
+import xml.etree.ElementTree as ET
+from urllib.parse import unquote, urlparse
+
+import supervisely as sly
+from dataset_tools.convert import unpack_if_archive
+from dotenv import load_dotenv
+from supervisely.io.fs import (
+    dir_exists,
+    get_file_ext,
+    get_file_name,
+    get_file_name_with_ext,
+    get_file_size,
+)
 from tqdm import tqdm
+
+import src.settings as s
+
 
 def download_dataset(teamfiles_dir: str) -> str:
     """Use it for large datasets to convert them on the instance"""
@@ -29,7 +42,7 @@ def download_dataset(teamfiles_dir: str) -> str:
             total=fsize,
             unit="B",
             unit_scale=True,
-        ) as pbar:        
+        ) as pbar:
             api.file.download(team_id, teamfiles_path, local_path, progress_cb=pbar)
         dataset_path = unpack_if_archive(local_path)
 
@@ -57,7 +70,8 @@ def download_dataset(teamfiles_dir: str) -> str:
 
         dataset_path = storage_dir
     return dataset_path
-    
+
+
 def count_files(path, extension):
     count = 0
     for root, dirs, files in os.walk(path):
@@ -65,21 +79,103 @@ def count_files(path, extension):
             if file.endswith(extension):
                 count += 1
     return count
-    
+
+
 def convert_and_upload_supervisely_project(
     api: sly.Api, workspace_id: int, project_name: str
 ) -> sly.ProjectInfo:
-    ### Function should read local dataset and upload it to Supervisely project, then return project info.###
-    raise NotImplementedError("The converter should be implemented manually.")
+    # project_name = "microscopy based diagnostics"
+    dataset_path = "/home/grokhi/rawdata/microscopy-dataset"
+    batch_size = 30
 
-    # dataset_path = "/local/path/to/your/dataset" # general way
-    # dataset_path = download_dataset(teamfiles_dir) # for large datasets stored on instance
+    images_ext = ".jpg"
+    ann_ext = ".xml"
 
-    # ... some code here ...
+    def create_ann(image_path):
+        labels = []
+        tags = []
 
-    # sly.logger.info('Deleting temporary app storage files...')
-    # shutil.rmtree(storage_dir)
+        image_np = sly.imaging.image.read(image_path)[:, :, 0]
+        img_height = image_np.shape[0]
+        img_wight = image_np.shape[1]
 
-    # return project
+        if curr_data == "plasmodium-images":
+            ann_path = image_path.replace("/images/", "/annotation/").replace(images_ext, ann_ext)
+            child = 5
+        else:
+            ann_path = image_path.replace(images_ext, ann_ext)
+            child = 4
 
+        tree = ET.parse(ann_path)
+        root = tree.getroot()
 
+        ann_objects = root.findall(".//object")
+        for curr_object in ann_objects:
+            obj_class_name = curr_object[0].text
+            obj_class = name_to_class[obj_class_name]
+            left = float(curr_object[child][0].text)
+            top = float(curr_object[child][1].text)
+            right = float(curr_object[child][2].text)
+            bottom = float(curr_object[child][3].text)
+
+            rect = sly.Rectangle(left=left, top=top, right=right, bottom=bottom)
+            label = sly.Label(rect, obj_class)
+            labels.append(label)
+
+        # tag_name = (
+        #     image_path.split("/")[-2]
+        #     if not "plasmodium-images" in image_path
+        #     else image_path.split("/")[-3]
+        # )
+        # # tags = [sly.Tag(tag_meta) for tag_meta in tag_metas if tag_meta.name == tag_name]
+
+        return sly.Annotation(img_size=(img_height, img_wight), labels=labels, img_tags=tags)
+
+    name_to_class = {
+        "Hookworm": sly.ObjClass("hookworm", sly.Rectangle),
+        "Taenia": sly.ObjClass("taenia", sly.Rectangle),
+        "Hymenolepsis Nana": sly.ObjClass("hymenolepsis nana", sly.Rectangle),
+        "TBbacillus": sly.ObjClass("tb bacillus", sly.Rectangle),
+        "plasmodium": sly.ObjClass("plasmodium", sly.Rectangle),
+        "person": sly.ObjClass("trophozoite", sly.Rectangle),
+    }
+
+    # tag_metas = [sly.TagMeta(name, sly.TagValueType.NONE) for name in os.listdir(dataset_path)]
+
+    project = api.project.create(workspace_id, project_name, change_name_if_conflict=True)
+    meta = sly.ProjectMeta(obj_classes=list(name_to_class.values()))
+    api.project.update_meta(project.id, meta.to_json())
+
+    all_data = os.listdir(dataset_path)
+
+    for curr_data in all_data:
+        curr_dataset_path = os.path.join(dataset_path, curr_data)
+        if dir_exists(curr_dataset_path):
+            dataset = api.dataset.create(project.id, curr_data, change_name_if_conflict=True)
+
+            if curr_data == "plasmodium-images":
+                curr_dataset_path = os.path.join(curr_dataset_path, "images")
+
+            images_names = [
+                im_name
+                for im_name in os.listdir(curr_dataset_path)
+                if get_file_ext(im_name) == images_ext
+            ]
+
+            progress = sly.Progress("Create dataset {}".format(curr_data), len(images_names))
+
+            for images_names_batch in sly.batched(images_names, batch_size=batch_size):
+                images_pahtes_batch = [
+                    os.path.join(curr_dataset_path, im_name) for im_name in images_names_batch
+                ]
+
+                img_infos = api.image.upload_paths(
+                    dataset.id, images_names_batch, images_pahtes_batch
+                )
+                img_ids = [im_info.id for im_info in img_infos]
+
+                anns = [create_ann(image_path) for image_path in images_pahtes_batch]
+                api.annotation.upload_anns(img_ids, anns)
+
+                progress.iters_done_report(len(images_names_batch))
+    return project

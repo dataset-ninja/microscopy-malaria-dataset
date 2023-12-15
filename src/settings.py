@@ -13,37 +13,42 @@ from dataset_tools.templates import (
 ##################################
 # * Before uploading to instance #
 ##################################
-PROJECT_NAME: str = None
-PROJECT_NAME_FULL: str = None
+PROJECT_NAME: str = "Microscopy Malaria Dataset"
+PROJECT_NAME_FULL: str = "Microscopy Malaria Dataset"
 HIDE_DATASET = True  # set False when 100% sure about repo quality
 
 ##################################
 # * After uploading to instance ##
 ##################################
-LICENSE: License = None
-APPLICATIONS: List[Union[Industry, Domain, Research]] = None
-CATEGORY: Category = None
+LICENSE: License = License.CC0_1_0()
+APPLICATIONS: List[Union[Industry, Domain, Research]] = [Industry.Medical()]
+CATEGORY: Category = Category.Medical()
 
-CV_TASKS: List[CVTask] = None
-ANNOTATION_TYPES: List[AnnotationType] = None
+CV_TASKS: List[CVTask] = [CVTask.ObjectDetection()]
+ANNOTATION_TYPES: List[AnnotationType] = [AnnotationType.ObjectDetection()]
 
 RELEASE_DATE: Optional[str] = None  # e.g. "YYYY-MM-DD"
 if RELEASE_DATE is None:
-    RELEASE_YEAR: int = None
+    RELEASE_YEAR: int = 2016
 
-HOMEPAGE_URL: str = None
+HOMEPAGE_URL: str = "https://air.ug/microscopy_dataset/#"
 # e.g. "https://some.com/dataset/homepage"
 
-PREVIEW_IMAGE_ID: int = None
+PREVIEW_IMAGE_ID: int = 9631125
 # This should be filled AFTER uploading images to instance, just ID of any image.
 
-GITHUB_URL: str = None
+GITHUB_URL: str = "https://github.com/dataset-ninja/microscopy-malaria-dataset"
 # URL to GitHub repo on dataset ninja (e.g. "https://github.com/dataset-ninja/some-dataset")
 
 ##################################
 ### * Optional after uploading ###
 ##################################
-DOWNLOAD_ORIGINAL_URL: Optional[Union[str, dict]] = None
+DOWNLOAD_ORIGINAL_URL: Optional[Union[str, dict]] = {
+    "tuberculosis-phonecamera.zip": "https://air.ug/static/images/downloads/tuberculosis-phonecamera.zip",
+    "plasmodium-phonecamera.zip": "https://air.ug/static/images/downloads/plasmodium-phonecamera.zip",
+    "plasmodium-images.zip": "https://air.ug/static/images/downloads/plasmodium-images.zip",
+    "intestinalparasites-phonecamera.zip": "https://air.ug/static/images/downloads/intestinalparasites-phonecamera.zip",
+}
 # Optional link for downloading original dataset (e.g. "https://some.com/dataset/download")
 
 CLASS2COLOR: Optional[Dict[str, List[str]]] = None
@@ -51,16 +56,32 @@ CLASS2COLOR: Optional[Dict[str, List[str]]] = None
 
 # If you have more than the one paper, put the most relatable link as the first element of the list
 # Use dict key to specify name for a button
-PAPER: Optional[Union[str, List[str], Dict[str, str]]] = None
+PAPER: Optional[
+    Union[str, List[str], Dict[str, str]]
+] = "https://proceedings.mlr.press/v56/Quinn16.pdf"
 BLOGPOST: Optional[Union[str, List[str], Dict[str, str]]] = None
-REPOSITORY: Optional[Union[str, List[str], Dict[str, str]]] = {"GitHub":"some_link_to_repo_if_exists"}
+REPOSITORY: Optional[Union[str, List[str], Dict[str, str]]] = None
 
 CITATION_URL: Optional[str] = None
-AUTHORS: Optional[List[str]] = None
-AUTHORS_CONTACTS: Optional[List[str]] = None
+AUTHORS: Optional[List[str]] = [
+    "John Quinn",
+    "Rose Nakasi",
+    "Pius K.B. Mugagga",
+    "Patrick Byanyima",
+    "William Lubega",
+    "Alfred Andama",
+]
+AUTHORS_CONTACTS: Optional[List[str]] = [
+    "jquinn@cit.ac.ug",
+    "g.nakasi.rose@gmail.com",
+    "piuskavz@gmail.com",
+    "byanyimap@yahoo.com",
+    "drlubega.william@gmail.com",
+    "andama.alf@gmail.com",
+]
 
-ORGANIZATION_NAME: Optional[Union[str, List[str]]] = None
-ORGANIZATION_URL: Optional[Union[str, List[str]]] = None
+ORGANIZATION_NAME: Optional[Union[str, List[str]]] = ["Makerere University AI Lab, Uganda"]
+ORGANIZATION_URL: Optional[Union[str, List[str]]] = ["https://www.mak.ac.ug/"]
 
 # Set '__PRETEXT__' or '__POSTTEXT__' as a key with string value to add custom text. e.g. SLYTAGSPLIT = {'__POSTTEXT__':'some text}
 SLYTAGSPLIT: Optional[Dict[str, Union[List[str], str]]] = None
