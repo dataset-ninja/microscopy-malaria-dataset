@@ -1,6 +1,6 @@
 Dataset **Microscopy Malaria Dataset** can be downloaded in [Supervisely format](https://developer.supervisely.com/api-references/supervisely-annotation-json-format):
 
- [Download](https://assets.supervisely.com/supervisely-supervisely-assets-public/teams_storage/Q/l/f1/6U2oNalGE33E7t5gf4Wmg0QeJkGRVP5SWocOjL6ASlOtZFFh2NBrYk6vX0hkDiHPJsG09r98jhPbl0AxO5Jz5EaLlLKtfoyt15E3SBMCSXMHyWrMAzMes3SkDMJl.tar)
+ [Download](https://www.dropbox.com/scl/fi/35790cveb5wc1xlumddix/microscopy-malaria-dataset-DatasetNinja.tar?rlkey=u300x0kyuookwbmyuy9mmj51g&dl=1)
 
 As an alternative, it can be downloaded with *dataset-tools* package:
 ``` bash
